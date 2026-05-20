@@ -1,0 +1,52 @@
+.page-container {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 400;
+    color: #333;
+  }
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.filter-field {
+  width: 320px;
+}
+
+table {
+  width: 100%;
+}
+
+.texto-vermelho {
+  color: #f44336;
+}
+
+.linha-vermelha {
+  background-color: #ffebee;
+  transition: background-color 0.2s;
+  &:hover {
+    background-color: #ffcdd2;
+  }
+}
+
+.empty-state {
+  padding: 48px;
+  text-align: center;
+  color: #757575;
+  background: white;
+  border-radius: 0 0 4px 4px;
+  border-top: 1px solid #e0e0e0;
+}

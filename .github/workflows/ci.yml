@@ -3,42 +3,52 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
+    branches:
+      - main
 
 permissions:
   actions: read
   contents: read
 
 jobs:
-  main:
+  ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          filter: tree:0
           fetch-depth: 0
 
-      
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Connect your workspace by running "nx connect" and uncomment this line to enable task distribution
-      # - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
-
-      
-      # Cache node_modules
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           cache: 'npm'
-       
-      - run: npm ci
 
+      - name: Cache Nx artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .nx/cache
+            ~/.npm
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json','**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-
 
-      # Prepend any command with "nx record --" to record its logs to Nx Cloud
-      # - run: npx nx record -- echo Hello World
-      - run: npx nx run-many -t lint test build
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
-      - run: npx nx fix-ci
-        if: always()
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting with Prettier
+        run: npx prettier --check "**/*.{ts,tsx,js,jsx,json,md,css,scss,html,yml,yaml}"
+
+      - name: Run ESLint on affected projects
+        run: npx nx affected --target=lint --base=origin/main --head=HEAD --parallel=3
+
+      - name: Run tests on affected projects
+        run: npx nx affected --target=test --base=origin/main --head=HEAD --parallel=3
+
+      - name: Build affected projects
+        run: npx nx affected --target=build --base=origin/main --head=HEAD --parallel=3 --configuration=production
+

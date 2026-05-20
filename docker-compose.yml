@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: erp_juds
+      POSTGRES_PASSWORD: erp_juds_2024
+      POSTGRES_DB: erp_juds
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - erp-network
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://erp_juds:erp_juds_2024@postgres:5432/erp_juds?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    networks:
+      - erp-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '80:80'
+    networks:
+      - erp-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  erp-network:
+    driver: bridge

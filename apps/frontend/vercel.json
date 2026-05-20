@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "buildCommand": "npm run vercel-build-frontend",
+  "outputDirectory": "dist/apps/frontend",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
