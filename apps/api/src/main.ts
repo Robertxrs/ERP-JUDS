@@ -11,7 +11,10 @@ async function bootstrap() {
 
   // CORS — permite requisições do frontend Angular
   app.enableCors({
-    origin: ['http://localhost:4200'],
+    origin: [
+      'http://localhost:4200',
+      'https://erp-juds-s1ee.vercel.app',
+    ],
     credentials: true,
   });
 

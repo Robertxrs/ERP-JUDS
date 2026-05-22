@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { Insumo, CreateInsumoDto, UpdateInsumoDto } from '../models/insumo.model';
 
 @Injectable({
@@ -8,7 +9,7 @@ import { Insumo, CreateInsumoDto, UpdateInsumoDto } from '../models/insumo.model
 })
 export class InsumosService {
   private http = inject(HttpClient);
-  private apiUrl = '/api/insumos'; // using proxy
+  private apiUrl = `${environment.apiUrl}/insumos`;
 
   findAll(): Observable<Insumo[]> {
     return this.http.get<Insumo[]>(this.apiUrl);
