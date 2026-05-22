@@ -1,10 +1,11 @@
-import { Component, inject, computed, toSignal } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { RouterModule } from '@angular/router';
-import { NgChartsModule } from 'ng2-charts';
+import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartType } from 'chart.js';
 import { DashboardService, DashboardData } from '../core/services/dashboard.service';
 
@@ -27,7 +28,7 @@ const defaultDashboard: DashboardData = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatTableModule, RouterModule, DatePipe, NgChartsModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, MatTableModule, RouterModule, DatePipe, BaseChartDirective],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -50,16 +51,16 @@ export class Dashboard {
   };
 
   chartData = computed(() => ({
-    labels: this.data().topInsumos.map(item => item.nome),
+    labels: this.data().topInsumos.map((item: any) => item.nome),
     datasets: [
       {
         label: 'Estoque Atual',
-        data: this.data().topInsumos.map(item => item.estoqueAtual),
+        data: this.data().topInsumos.map((item: any) => item.estoqueAtual),
         backgroundColor: '#42a5f5',
       },
       {
         label: 'Estoque Mínimo',
-        data: this.data().topInsumos.map(item => item.estoqueMin),
+        data: this.data().topInsumos.map((item: any) => item.estoqueMin),
         backgroundColor: '#ffca28',
       },
     ],
@@ -80,11 +81,11 @@ export class Dashboard {
   };
 
   consumoChartData = computed(() => ({
-    labels: this.data().consumoSemanal.map(item => item.dia),
+    labels: this.data().consumoSemanal.map((item: any) => item.dia),
     datasets: [
       {
         label: 'Consumo',
-        data: this.data().consumoSemanal.map(item => item.quantidade),
+        data: this.data().consumoSemanal.map((item: any) => item.quantidade),
         fill: false,
         borderColor: '#66bb6a',
         tension: 0.3,
