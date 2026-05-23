@@ -1,0 +1,216 @@
+// ============================================
+// Schema Prisma — ERP Juds
+// ============================================
+// Modelos: Insumo, Produto, Receita, Producao, Movimentacao
+// Provider: PostgreSQL
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+/// Unidade de medida padrão para insumos e receitas
+enum UnidadeMedida {
+  KG // Quilograma
+  G // Grama
+  L // Litro
+  ML // Mililitro
+  UN // Unidade
+}
+
+/// Tipo de movimentação de estoque
+enum TipoMovimentacao {
+  ENTRADA // Compra / reposição de estoque
+  SAIDA // Venda ou consumo em produção
+  AJUSTE // Ajuste manual de inventário
+  PRODUCAO // Saída automática por produção
+}
+
+/// Papel do usuário no sistema
+enum UserRole {
+  ADMIN // Acesso total ao sistema
+  OPERADOR // Acesso restrito (produção/estoque)
+}
+
+// ============================================
+// MODEL: User (Usuário do Sistema)
+// ============================================
+
+/// Usuário autenticado do sistema ERP.
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique @db.VarChar(255)
+  nome         String   @db.VarChar(150)
+  senha        String   @db.VarChar(255) // Hash bcrypt
+  role         UserRole @default(OPERADOR)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("users")
+}
+
+// ============================================
+// MODEL: Insumo (Matéria-prima)
+// ============================================
+
+/// Matéria-prima usada na produção dos produtos.
+/// Ex: Farinha de Trigo, Açúcar, Manteiga, Fermento.
+model Insumo {
+  id            Int           @id @default(autoincrement())
+  nome          String        @db.VarChar(150)
+  descricao     String?       @db.Text
+  unidade       UnidadeMedida
+  estoqueAtual  Float         @default(0) @map("estoque_atual")
+  estoqueMin    Float         @default(0) @map("estoque_min")
+  custoUnitario Float         @default(0) @map("custo_unitario")
+  ativo         Boolean       @default(true)
+  criadoEm      DateTime      @default(now()) @map("criado_em")
+  atualizadoEm  DateTime      @updatedAt @map("atualizado_em")
+
+  // Relacionamentos
+  receitaItens  ReceitaItem[]
+  movimentacoes Movimentacao[]
+
+  @@map("insumos")
+}
+
+// ============================================
+// MODEL: Produto (Produto Final)
+// ============================================
+
+/// Produto final vendido ao cliente.
+/// Ex: Pão Francês, Bolo de Chocolate, Rosca.
+model Produto {
+  id           Int           @id @default(autoincrement())
+  nome         String        @db.VarChar(150)
+  descricao    String?       @db.Text
+  precoVenda   Float         @default(0) @map("preco_venda")
+  estoqueAtual Float         @default(0) @map("estoque_atual")
+  estoqueMin   Float         @default(0) @map("estoque_min")
+  unidade      UnidadeMedida @default(UN)
+  ativo        Boolean       @default(true)
+  criadoEm     DateTime      @default(now()) @map("criado_em")
+  atualizadoEm DateTime      @updatedAt @map("atualizado_em")
+
+  // Relacionamentos
+  receitas  Receita[]
+  producoes Producao[]
+
+  @@map("produtos")
+}
+
+// ============================================
+// MODEL: Receita (Ficha Técnica do Produto)
+// ============================================
+
+/// Ficha técnica: define quais insumos e quantidades
+/// são necessários para produzir um determinado produto.
+/// Um produto pode ter várias receitas (ex: versões diferentes).
+model Receita {
+  id           Int      @id @default(autoincrement())
+  nome         String   @db.VarChar(200)
+  descricao    String?  @db.Text
+  rendimento   Float    @default(1) // Quantas unidades do produto a receita rende
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  // FK → Produto
+  produtoId Int     @map("produto_id")
+  produto   Produto @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+
+  // Relacionamentos
+  itens     ReceitaItem[]
+  producoes Producao[]
+
+  @@map("receitas")
+}
+
+// ============================================
+// MODEL: ReceitaItem (Ingrediente da Receita)
+// ============================================
+
+/// Tabela associativa: define cada ingrediente (insumo)
+/// e sua quantidade dentro de uma receita.
+model ReceitaItem {
+  id         Int   @id @default(autoincrement())
+  quantidade Float // Quantidade do insumo necessária
+
+  // FK → Receita
+  receitaId Int     @map("receita_id")
+  receita   Receita @relation(fields: [receitaId], references: [id], onDelete: Cascade)
+
+  // FK → Insumo
+  insumoId Int    @map("insumo_id")
+  insumo   Insumo @relation(fields: [insumoId], references: [id], onDelete: Restrict)
+
+  @@unique([receitaId, insumoId]) // Um insumo aparece só uma vez por receita
+  @@map("receita_itens")
+}
+
+// ============================================
+// MODEL: Producao (Registro de Produção)
+// ============================================
+
+/// Registra cada execução de uma receita.
+/// Ao criar uma produção, o sistema automaticamente:
+///   1. Debita os insumos do estoque (via Movimentacao PRODUCAO)
+///   2. Credita o produto final no estoque
+model Producao {
+  id                  Int      @id @default(autoincrement())
+  quantidadeProduzida Float    @map("quantidade_produzida")
+  custoTotal          Float    @default(0) @map("custo_total")
+  observacao          String?  @db.Text
+  produzidoEm         DateTime @default(now()) @map("produzido_em")
+  criadoEm            DateTime @default(now()) @map("criado_em")
+
+  // FK → Receita (qual receita foi executada)
+  receitaId Int     @map("receita_id")
+  receita   Receita @relation(fields: [receitaId], references: [id], onDelete: Restrict)
+
+  // FK → Produto (qual produto foi gerado)
+  produtoId Int     @map("produto_id")
+  produto   Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+
+  // Relacionamentos
+  movimentacoes Movimentacao[]
+
+  @@map("producoes")
+}
+
+// ============================================
+// MODEL: Movimentacao (Movimentação de Estoque)
+// ============================================
+
+/// Registra toda e qualquer movimentação de estoque de insumos.
+/// Tipos: ENTRADA (compra), SAIDA (venda/consumo), AJUSTE, PRODUCAO.
+model Movimentacao {
+  id            Int              @id @default(autoincrement())
+  tipo          TipoMovimentacao
+  quantidade    Float
+  custoUnitario Float?           @map("custo_unitario")
+  observacao    String?          @db.Text
+  criadoEm      DateTime         @default(now()) @map("criado_em")
+
+  // FK → Insumo (qual insumo foi movimentado)
+  insumoId Int    @map("insumo_id")
+  insumo   Insumo @relation(fields: [insumoId], references: [id], onDelete: Restrict)
+
+  // FK → Producao (opcional: se a movimentação foi gerada por uma produção)
+  producaoId Int?      @map("producao_id")
+  producao   Producao? @relation(fields: [producaoId], references: [id], onDelete: SetNull)
+
+  @@index([insumoId, criadoEm])
+  @@index([tipo])
+  @@map("movimentacoes")
+}
