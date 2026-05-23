@@ -1,13 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "cd ../.. && npm run vercel-build-api",
   "builds": [
     {
       "src": "dist/apps/api/main.js",
-      "use": "@vercel/node",
-      "config": {
-        "maxDuration": 30
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -15,14 +11,5 @@
       "src": "/(.*)",
       "dest": "dist/apps/api/main.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "dist/apps/api/main.js": {
-      "maxDuration": 30,
-      "memory": 1024
-    }
-  }
+  ]
 }
