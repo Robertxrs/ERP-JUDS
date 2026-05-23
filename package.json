@@ -2,6 +2,9 @@
   "name": "@erp-juds/source",
   "version": "0.0.0",
   "license": "MIT",
+   "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "postinstall": "prisma generate --schema=apps/api/prisma/schema.prisma",
     "vercel-build-api": "npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npx nx build api --configuration=production",
