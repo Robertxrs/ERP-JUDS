@@ -15,7 +15,9 @@
     "skipDefaultLibCheck": true,
     "paths": {
       "@mini-erp/shared-types": ["./libs/shared-types/src/index.ts"],
-      "@mini-erp/dto": ["./libs/dto/src/index.ts"]
+      "@mini-erp/dto": ["./libs/dto/src/index.ts"],
+      "@prisma/client": ["./apps/api/generated/prisma"],
+      "@prisma/client/*": ["./apps/api/generated/prisma/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]
