@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "postinstall": "prisma generate --schema=apps/api/prisma/schema.prisma",
     "vercel-build-api": "npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npx nx build api --configuration=production",
     "vercel-build-frontend": "npx nx build frontend --configuration=production"
   },
